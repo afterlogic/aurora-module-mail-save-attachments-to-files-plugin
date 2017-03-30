@@ -1,0 +1,1 @@
+# aurora-module-mail-save-attachments-to-files-plugin
