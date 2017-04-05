@@ -28,7 +28,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 			$aTempFiles = $oMailModuleDecorator->SaveAttachmentsAsTempFiles($AccountID, $Attachments);
 			if (\is_array($aTempFiles))
 			{
-				$sUUID = \Aurora\System\Api::getAuthenticatedUserUUIDById($UserId);
+				$sUUID = \Aurora\System\Api::getUserUUIDById($UserId);
 				foreach ($aTempFiles as $sTempName => $aData)
 				{
 					if (\is_array($aData) && isset($aData[0], $aData[1], $aData[2], $aData[3]))
