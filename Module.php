@@ -20,6 +20,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	 */
 	public function Save($UserId, $AccountID, $Attachments = array())
 	{
+		$mResult = false;
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\EUserRole::NormalUser);
 		
 		$oMailModuleDecorator = \Aurora\System\Api::GetModuleDecorator('Mail');
@@ -29,11 +30,12 @@ class Module extends \Aurora\System\Module\AbstractModule
 			if (\is_array($aTempFiles))
 			{
 				$sUUID = \Aurora\System\Api::getUserUUIDById($UserId);
-				foreach ($aTempFiles as $sTempName => $aData)
+				foreach ($aTempFiles as $sTempName => $sData)
 				{
-					if (\is_array($aData) && isset($aData[0], $aData[1], $aData[2], $aData[3]))
+					$aData = \Aurora\System\Api::DecodeKeyValues($sData);
+					if (\is_array($aData) && isset($aData['FileName']))
 					{
-						$sFileName = (string) $aData[0];
+						$sFileName = (string) $aData['FileName'];
 						$rResource = $this->oApiFileCache->getFile($sUUID, $sTempName);
 						if ($rResource)
 						{
@@ -43,10 +45,13 @@ class Module extends \Aurora\System\Module\AbstractModule
 								'Path' => '',
 								'Name' => $sFileName,
 								'Data' => $rResource,
-								'Overwrite' => false
+								'Overwrite' => false,
+								'RangeType' => 0,
+								'Offset' => 0,
+								'ExtendedProps' => array()
 							);
-							$mResult = false;
-							$this->broadcastEvent(
+							\Aurora\System\Api::GetModuleManager()->broadcastEvent(
+								'Files',
 								'CreateFile', 
 								$aArgs,
 								$mResult
@@ -56,5 +61,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 				}
 			}			
 		}
+		
+		return $mResult;
 	}
 }
