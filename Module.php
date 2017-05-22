@@ -21,7 +21,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	public function Save($UserId, $AccountID, $Attachments = array())
 	{
 		$mResult = false;
-		\Aurora\System\Api::checkUserRoleIsAtLeast(\EUserRole::NormalUser);
+		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
 		
 		$oMailModuleDecorator = \Aurora\System\Api::GetModuleDecorator('Mail');
 		if ($oMailModuleDecorator)
