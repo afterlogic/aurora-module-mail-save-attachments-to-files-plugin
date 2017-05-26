@@ -23,7 +23,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 		$mResult = false;
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
 		
-		$oMailModuleDecorator = \Aurora\System\Api::GetModuleDecorator('Mail');
+		$oMailModuleDecorator = \Aurora\Modules\Mail\Module::Decorator();
 		if ($oMailModuleDecorator)
 		{
 			$aTempFiles = $oMailModuleDecorator->SaveAttachmentsAsTempFiles($AccountID, $Attachments);
