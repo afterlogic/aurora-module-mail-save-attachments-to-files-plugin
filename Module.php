@@ -11,7 +11,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 
 	public function init() 
 	{
-		$this->oApiFileCache = \Aurora\System\Api::GetSystemManager('Filecache');
+		$this->oApiFileCache = new \Aurora\System\Managers\Filecache\Manager();
 	}	
 	
 	/**
