@@ -3,8 +3,11 @@
 module.exports = function (oAppData) {
 	var
 		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
+		
 		Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
-		App = require('%PathToCoreWebclientModule%/js/App.js')
+		Api = require('%PathToCoreWebclientModule%/js/Api.js'),
+		App = require('%PathToCoreWebclientModule%/js/App.js'),
+		Screens = require('%PathToCoreWebclientModule%/js/Screens.js')
 	;
 	
 	if (App.getUserRole() === Enums.UserRole.NormalUser)
@@ -15,9 +18,24 @@ module.exports = function (oAppData) {
 					fAddAllAttachmentsDownloadMethod({
 						'Text': TextUtils.i18n('%MODULENAME%/ACTION_SAVE_ATTACHMENTS_TO_FILES'),
 						'Handler': function (iAccountId, aHashes) {
+							Screens.showLoading(TextUtils.i18n('COREWEBCLIENT/INFO_LOADING'));
 							Ajax.send('%ModuleName%', 'Save', {
 								'AccountID': iAccountId,
 								'Attachments': aHashes
+							}, function (oResponse) {
+								Screens.hideLoading();
+								if (oResponse.Result)
+								{
+									var oHeaderItem = ModulesManager.run('FilesWebclient', 'getHeaderItem');
+									if (oHeaderItem.item)
+									{
+										oHeaderItem.item.recivedAnim(true);
+									}
+								}
+								else
+								{
+									Api.showErrorByCode(oResponse);
+								}
 							});
 						}
 					});
