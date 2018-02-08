@@ -27,7 +27,7 @@ module.exports = function (oAppData) {
 								if (oResponse.Result)
 								{
 									var oHeaderItem = ModulesManager.run('FilesWebclient', 'getHeaderItem');
-									if (oHeaderItem.item)
+									if (oHeaderItem && oHeaderItem.item)
 									{
 										oHeaderItem.item.recivedAnim(true);
 									}
