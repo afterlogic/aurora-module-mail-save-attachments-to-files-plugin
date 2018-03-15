@@ -36,7 +36,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					if (\is_array($aData) && isset($aData['FileName']))
 					{
 						$sFileName = (string) $aData['FileName'];
-						$rResource = $this->oApiFileCache->getFile($sUUID, $sTempName);
+						$rResource = $this->oApiFileCache->getFile($sUUID, $sTempName, '', 'Mail');
 						if ($rResource)
 						{
 							$aArgs = array(
