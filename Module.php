@@ -5,13 +5,22 @@ namespace Aurora\Modules\MailSaveAttachmentsToFilesPlugin;
 class Module extends \Aurora\System\Module\AbstractModule
 {
 	/* 
-	 * @var $oApiFileCache \Aurora\System\Managers\Filecache 
+	 * @var $getFilecacheManager()Manager \Aurora\System\Managers\Filecache 
 	 */	
-	public $oApiFileCache = null;
+	public $oApiFilecacheManager = null;
+
+	public function getFilecacheManager()
+	{
+		if ($this->oApiFilecacheManager === null)
+		{
+			$this->oApiFilecacheManager = new \Aurora\System\Managers\Filecache();
+		}
+
+		return $this->oApiFilecacheManager;
+	}
 
 	public function init() 
 	{
-		$this->oApiFileCache = new \Aurora\System\Managers\Filecache();
 	}	
 	
 	/**
@@ -36,7 +45,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 					if (\is_array($aData) && isset($aData['FileName']))
 					{
 						$sFileName = (string) $aData['FileName'];
-						$rResource = $this->oApiFileCache->getFile($sUUID, $sTempName);
+						$rResource = $this->getFilecacheManager()->getFile($sUUID, $sTempName);
 						if ($rResource)
 						{
 							$aArgs = array(
