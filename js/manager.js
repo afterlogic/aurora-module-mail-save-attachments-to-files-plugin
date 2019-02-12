@@ -7,8 +7,14 @@ module.exports = function (oAppData) {
 		Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
 		Api = require('%PathToCoreWebclientModule%/js/Api.js'),
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
+		ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
 		Screens = require('%PathToCoreWebclientModule%/js/Screens.js')
 	;
+	
+	if (!ModulesManager.isModuleEnabled('FilesWebclient'))
+	{
+		return null;
+	}
 	
 	if (App.getUserRole() === Enums.UserRole.NormalUser)
 	{
