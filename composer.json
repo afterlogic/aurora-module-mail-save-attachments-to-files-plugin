@@ -2,7 +2,7 @@
 	"name": "afterlogic/aurora-module-mail-save-attachments-to-files-plugin",
 	"type": "aurora-module",
 	"require": {
-		"afterlogic/aurora-framework": "~0.9.0"
+		"afterlogic/aurora-framework": "~0.10.0"
 	},
 	"extra": {
 		"installer-name": "MailSaveAttachmentsToFilesPlugin"
