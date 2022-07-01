@@ -1,0 +1,36 @@
+<div class="popup files popup_save_to_files" style="display: none;">
+	<div class="mask" data-bind="click: cancelPopup"></div>
+	<div class="popup_panel">
+		<span class="close" data-bind="click: cancelPopup"></span>
+
+		<div class="panels">
+			<div class="panel left_panel storages_panel">
+				<div class="panel_content">
+					<div class="middle_bar"
+						 data-bind="template: {name: 'FilesWebclient_StoragesPanelView', data: filesView}"
+					></div>
+				</div>
+			</div>
+			<div class="panel files">
+				<div class="panel_content">
+					<div class="middle_bar"
+						 data-bind="template: {name: 'FilesWebclient_FilesPanelView', data: filesView}"
+					></div>
+				</div>
+			</div>
+		</div>
+
+		<div class="buttons">
+			<span class="button"
+				  data-bind="i18n: {'key': 'FILESWEBCLIENT/ACTION_NEW_FOLDER'}, click: createFolder"
+			></span>
+			<span class="button"
+				  data-bind="i18n: {'key': '%MODULENAME%/ACTION_SAVE_HERE'}, command: selectFolderCommand"
+			></span>
+			<span class="button secondary_button"
+				  data-bind="i18n: {'key': 'COREWEBCLIENT/ACTION_CLOSE'}, click: closePopup"
+			></span>
+		</div>
+	</div>
+	<span class="helper"></span>
+</div>

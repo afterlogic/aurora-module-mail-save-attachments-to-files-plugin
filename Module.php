@@ -39,7 +39,7 @@ class Module extends \Aurora\System\Module\AbstractModule
 	 * 
 	 * @return boolean
 	 */
-	public function Save($UserId, $AccountID, $Attachments = array())
+	public function Save($UserId, $AccountID, $Attachments = [], $Storage = 'personal', $Path = '')
 	{
 		$mResult = false;
 		\Aurora\System\Api::checkUserRoleIsAtLeast(\Aurora\System\Enums\UserRole::NormalUser);
@@ -62,8 +62,8 @@ class Module extends \Aurora\System\Module\AbstractModule
 						{
 							$aArgs = array(
 								'UserId' => $UserId,
-								'Type' => 'personal',
-								'Path' => '',
+								'Type' => $Storage,
+								'Path' => $Path,
 								'Name' => $sFileName,
 								'Data' => $rResource,
 								'Overwrite' => false,
