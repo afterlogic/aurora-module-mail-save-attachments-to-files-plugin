@@ -5,9 +5,7 @@ module.exports = function (appData) {
 		TextUtils = require('%PathToCoreWebclientModule%/js/utils/Text.js'),
 
 		App = require('%PathToCoreWebclientModule%/js/App.js'),
-		ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
-
-		FilesUtils = require('modules/%ModuleName%/js/utils/Files.js')
+		ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js')
 	;
 
 	if (!ModulesManager.isModuleEnabled('FilesWebclient')) {
@@ -20,8 +18,12 @@ module.exports = function (appData) {
 				App.subscribeEvent('MailWebclient::AddAllAttachmentsDownloadMethod', fAddAllAttachmentsDownloadMethod => {
 					fAddAllAttachmentsDownloadMethod({
 						'Text': TextUtils.i18n('%MODULENAME%/ACTION_SAVE_ATTACHMENTS_TO_FILES'),
-						'Handler': function (accountId, hashes) {
-							FilesUtils.openSelectFilesPopup(accountId, hashes);
+						'Handler': function (accountId, hashes, attachments) {
+							const
+								Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
+								SelectFilesPopup = require('modules/%ModuleName%/js/popups/SelectFilesPopup.js')
+							;
+							Popups.showPopup(SelectFilesPopup, [attachments, accountId]);
 						}
 					});
 				});
