@@ -9,11 +9,18 @@ const
 
 	Ajax = require('%PathToCoreWebclientModule%/js/Ajax.js'),
 	Api = require('%PathToCoreWebclientModule%/js/Api.js'),
+	App = require('%PathToCoreWebclientModule%/js/App.js'),
 	CAbstractPopup = require('%PathToCoreWebclientModule%/js/popups/CAbstractPopup.js'),
+	CJua = require('%PathToCoreWebclientModule%/js/CJua.js'),
 	ModulesManager = require('%PathToCoreWebclientModule%/js/ModulesManager.js'),
+	Popups = require('%PathToCoreWebclientModule%/js/Popups.js'),
 	Screens = require('%PathToCoreWebclientModule%/js/Screens.js'),
+	UserSettings = require('%PathToCoreWebclientModule%/js/Settings.js'),
 
-	CFilesView = require('modules/FilesWebclient/js/views/CFilesView.js')
+	CFilesView = require('modules/FilesWebclient/js/views/CFilesView.js'),
+
+	isCoreParanoidModuleEnabled = ModulesManager.run('CoreParanoidEncryptionWebclientPlugin', 'isEnabled'),
+	ConfirmEncryptionPopup = ModulesManager.run('CoreParanoidEncryptionWebclientPlugin', 'getConfirmEncryptionPopup')
 ;
 
 /**
@@ -64,39 +71,21 @@ CSelectFilesPopup.prototype.PopupTemplate = '%ModuleName%_SelectFilesPopup';
  */
 CSelectFilesPopup.prototype.onOpen = function (attachments, accountId)
 {
-	const attachmentsDataToUpload = [];
-	attachments.forEach(attach => {
-		const
-			fileData = {
-				FileName: attach.fileName(),
-				Size: attach.size(),
-				Hash: attach.hash(),
-				Type: attach.mimeType()
-			},
-			isFileSizeLessThanUploadLimit = this.filesView.isFileSizeLessThanUploadLimit(fileData)
-		;
+	this.initUploader();
 
-		if (isFileSizeLessThanUploadLimit) {
-			attachmentsDataToUpload.push(fileData);
-		}
+	this.attachmentsData = attachments.map(attach => {
+		return {
+			attach,
+			FileName: attach.fileName(),
+			Size: attach.size(),
+			Hash: attach.hash(),
+			Type: attach.mimeType()
+		};
 	});
-
-	if (attachmentsDataToUpload.length === 0) {
-		this.closePopup();
-		return;
-	}
-
-	this.attachmentsData = attachmentsDataToUpload;
 	this.accountId = accountId;
 
 	this.filesView.onShow();
 	this.filesView.routeFiles('personal', '');
-	this.filesView.storages.subscribe(function () {
-		const storages = this.filesView.storages();
-		if (storages.find(storage => storage.type === 'encrypted')) {
-			this.filesView.storages(storages.filter(storage => storage.type !== 'encrypted'));
-		}
-	}, this);
 };
 
 CSelectFilesPopup.prototype.onBind = function ()
@@ -104,29 +93,58 @@ CSelectFilesPopup.prototype.onBind = function ()
 	this.filesView.onBind(this.$popupDom);
 };
 
+CSelectFilesPopup.prototype.hideLoading = function ()
+{
+	this.isSaving(false);
+	Screens.hideLoading();
+};
+
+CSelectFilesPopup.prototype.onClose = function ()
+{
+	this.hideLoading();
+};
+
 CSelectFilesPopup.prototype.selectFolder = function ()
 {
-	const hashes = [];
-
-	this.attachmentsData.forEach(fileData => {
-		const isFileCanBeUploaded = this.filesView.isFileCanBeUploaded(fileData);
-		if (isFileCanBeUploaded) {
-			this.filesView.onFileUploadSelect(fileData.Hash, fileData);
-			this.filesView.onFileUploadStart(fileData.Hash);
-			this.filesView.onFileUploadProgress(fileData.Hash, fileData.Size * 0.2, fileData.Size);
-			hashes.push(fileData.Hash);
+	const filesData = this.attachmentsData.filter(fileData => this.filesView.isFileCanBeUploaded(fileData));
+	if (filesData.length > 0) {
+		const
+			storageType = this.filesView.storageType(),
+			currentPath = this.filesView.currentPath(),
+			saveToFolderArgs = [storageType, currentPath, this.accountId, filesData],
+			encryptAndSaveHandler = () => { this.encryptAndSaveToFolder(...saveToFolderArgs); },
+			saveHandler = () => { this.saveToFolder(...saveToFolderArgs); },
+			cancelHandler = () => { this.closePopup(); }
+		;
+		if (isCoreParanoidModuleEnabled) {
+			if (this.filesView.storageType() === 'encrypted') {
+				encryptAndSaveHandler();
+			} else if (this.filesView.storageType() === 'personal' && ConfirmEncryptionPopup) {
+				Popups.showPopup(ConfirmEncryptionPopup, [
+					encryptAndSaveHandler,
+					saveHandler,
+					cancelHandler,
+					filesData.length,
+					filesData.map(fileData => fileData.FileName)
+				]);
+			} else {
+				saveHandler();
+			}
+		} else {
+			saveHandler();
 		}
-	});
-
-	if (hashes.length > 0) {
-		this.saveToFolder(this.filesView.storageType(), this.filesView.currentPath(), this.accountId, hashes);
 	}
 };
 
-CSelectFilesPopup.prototype.saveToFolder = function(storage, path, accountId, hashes)
+CSelectFilesPopup.prototype.saveToFolder = function(storage, path, accountId, filesData)
 {
-	Screens.showLoading(TextUtils.i18n('COREWEBCLIENT/INFO_LOADING'));
+	filesData.forEach(fileData => {
+		this.filesView.onFileUploadSelect(fileData.Hash, fileData);
+		this.filesView.onFileUploadStart(fileData.Hash);
+		this.filesView.onFileUploadProgress(fileData.Hash, fileData.Size * 0.2, fileData.Size);
+	});
 	const
+		hashes = filesData.map(fileData => fileData.Hash),
 		parameters = {
 			'AccountID': accountId,
 			'Attachments': hashes,
@@ -134,32 +152,139 @@ CSelectFilesPopup.prototype.saveToFolder = function(storage, path, accountId, ha
 			'Path': path
 		},
 		responseHandler = response => {
-			this.isSaving(false);
-			Screens.hideLoading();
+			this.hideLoading();
 			if (response.Result) {
-				const headerItemView = ModulesManager.run('FilesWebclient', 'getHeaderItem');
-				if (headerItemView && headerItemView.item) {
-					headerItemView.item.recivedAnim(true);
-				}
 				this.attachmentsData.forEach(fileData => {
 					this.filesView.onFileUploadComplete(fileData.Hash, true, { Result: true });
 				});
-				if (this.filesView.uploadingFiles().length === 0) {
-					const
-						filesCount = this.attachmentsData.length,
-						reportLang = '%MODULENAME%/REPORT_FILES_SAVED_SUCCESSFULLY_PLURAL',
-						reportText = TextUtils.i18n(reportLang, null, null, filesCount)
-					;
-					Screens.showReport(reportText);
-				}
-				setTimeout(() => { this.closePopup(); }, 1000);
+				this.onFileUploadComplete();
 			} else {
 				Api.showErrorByCode(response);
 			}
 		}
 	;
+	Screens.showLoading(TextUtils.i18n('COREWEBCLIENT/INFO_LOADING'));
 	this.isSaving(true);
 	Ajax.send('%ModuleName%', 'Save', parameters, responseHandler);
+};
+
+CSelectFilesPopup.prototype.onFileUploadComplete = function ()
+{
+	if (this.filesView.uploadingFiles().length > 0) {
+		return;
+	}
+
+	const headerItemView = ModulesManager.run('FilesWebclient', 'getHeaderItem');
+	if (headerItemView && headerItemView.item) {
+		headerItemView.item.recivedAnim(true);
+	}
+
+	const
+		filesCount = this.attachmentsData.length,
+		reportLang = '%MODULENAME%/REPORT_FILES_SAVED_SUCCESSFULLY_PLURAL',
+		reportText = TextUtils.i18n(reportLang, null, null, filesCount)
+	;
+	Screens.showReport(reportText);
+	setTimeout(() => { this.closePopup(); }, 1000);
+
+	this.hideLoading();
+};
+
+CSelectFilesPopup.prototype.encryptAndSaveToFolder = function(storage, path, accountId, filesData)
+{
+	filesData.forEach(fileData => {
+		this.filesView.onFileUploadSelect(fileData.Hash, fileData);
+		this.filesView.onFileUploadStart(fileData.Hash);
+		this.filesView.onFileUploadProgress(fileData.Hash, fileData.Size * 0.1, fileData.Size);
+	});
+	Screens.showLoading(TextUtils.i18n('COREWEBCLIENT/INFO_LOADING'));
+	this.isSaving(true);
+	const attaches = filesData.map(fileData => fileData.attach);
+	attaches.forEach(attach => {
+		const downloadUrl = attach.getActionUrl('download');
+		jQuery.ajax({
+			url: downloadUrl,
+			cache: false,
+			xhrFields: {
+				responseType: 'blob'
+			},
+			success: blobData => {
+				this.encryptBlob(attach, blobData);
+			},
+			error: function (error) {
+				this.hideLoading();
+				this.filesView.onFileUploadComplete(attach.hash(), false, { Result: false });
+			}
+		});
+	});
+};
+
+CSelectFilesPopup.prototype.encryptBlob = function(attach, blobData)
+{
+	this.oJua.addFile(attach.hash(), {
+		File: blobData,
+		FileName: attach.fileName(),
+		Folder: '',
+		Size: blobData.size,
+		Type: blobData.type,
+		EncryptWithoutConfirm: true
+	});
+	const file = this.filesView.getUploadFileByUid(attach.hash());
+	if (file) {
+		this.filesView.onFileUploadProgress(attach.hash(), file.size() * 0.2, file.size());
+	}
+};
+
+CSelectFilesPopup.prototype.initUploader = function ()
+{
+	if (!this.oJua) {
+		this.oJua = new CJua({
+			'action': '?/Api/',
+			'name': 'jua-uploader',
+			'queueSize': 2,
+			'clickElement': null,
+			'hiddenElementsPosition': UserSettings.IsRTL ? 'right' : 'left',
+			'dragAndDropElement': null,
+			'disableAjaxUpload': false,
+			'disableFolderDragAndDrop': true,
+			'disableDragAndDrop': true,
+			'hidden': _.extendOwn({
+				'Module': 'Files',
+				'Method': 'UploadFile',
+				'Parameters':  file => {
+					return JSON.stringify({
+						'Type': this.filesView.storageType(),
+						'SubPath': '',
+						'Path': this.filesView.currentPath(),
+						'Overwrite': false
+					});
+				}
+			}, App.getCommonRequestParameters())
+		});
+
+		this.oJua
+			.on('onProgress', (fileUid, uploadedSize, fileSize) => {
+				let percent = uploadedSize / fileSize;
+				if (percent < 0.2) {
+					percent = 0.2;
+				}
+				this.filesView.onFileUploadProgress(fileUid, fileSize * percent, fileSize);
+			})
+			.on('onSelect', this.filesView.onFileUploadSelect.bind(this.filesView))
+			.on('onStart', (fileUid) => {
+				this.filesView.onFileUploadStart(fileUid);
+				const file = this.filesView.getUploadFileByUid(fileUid);
+				if (file) {
+					this.filesView.onFileUploadProgress(fileUid, file.size() * 0.2, file.size());
+				}
+			})
+			.on('onComplete', (sFileUid, bResponseReceived, oResult) => {
+				this.filesView.onFileUploadComplete(sFileUid, bResponseReceived, oResult);
+				this.onFileUploadComplete();
+			})
+			.on('onCancel', this.filesView.onCancelUpload.bind(this.filesView))
+		;
+	}
 };
 
 CSelectFilesPopup.prototype.createFolder = function ()
