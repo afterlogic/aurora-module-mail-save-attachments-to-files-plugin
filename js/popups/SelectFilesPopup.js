@@ -19,8 +19,7 @@ const
 
 	CFilesView = require('modules/FilesWebclient/js/views/CFilesView.js'),
 
-	isCoreParanoidModuleEnabled = ModulesManager.run('CoreParanoidEncryptionWebclientPlugin', 'isEnabled'),
-	ConfirmEncryptionPopup = ModulesManager.run('CoreParanoidEncryptionWebclientPlugin', 'getConfirmEncryptionPopup')
+	isCoreParanoidModuleEnabled = ModulesManager.run('CoreParanoidEncryptionWebclientPlugin', 'isEnabled')
 ;
 
 /**
@@ -112,11 +111,13 @@ CSelectFilesPopup.prototype.selectFolder = function ()
 			storageType = this.filesView.storageType(),
 			currentPath = this.filesView.currentPath(),
 			saveToFolderArgs = [storageType, currentPath, this.accountId, filesData],
-			encryptAndSaveHandler = () => { this.encryptAndSaveToFolder(...saveToFolderArgs); },
+			encryptAndSaveHandler = () => { this.encryptAndSaveToFolder(filesData); },
 			saveHandler = () => { this.saveToFolder(...saveToFolderArgs); },
 			cancelHandler = () => { this.closePopup(); }
 		;
 		if (isCoreParanoidModuleEnabled) {
+			// get ConfirmEncryptionPopup every time in case the EnableInPersonalStorage setting has changed
+			const ConfirmEncryptionPopup = ModulesManager.run('CoreParanoidEncryptionWebclientPlugin', 'getConfirmEncryptionPopup');
 			if (this.filesView.storageType() === 'encrypted') {
 				encryptAndSaveHandler();
 			} else if (this.filesView.storageType() === 'personal' && ConfirmEncryptionPopup) {
@@ -190,7 +191,7 @@ CSelectFilesPopup.prototype.onFileUploadComplete = function ()
 	this.hideLoading();
 };
 
-CSelectFilesPopup.prototype.encryptAndSaveToFolder = function(storage, path, accountId, filesData)
+CSelectFilesPopup.prototype.encryptAndSaveToFolder = function(filesData)
 {
 	filesData.forEach(fileData => {
 		this.filesView.onFileUploadSelect(fileData.Hash, fileData);
@@ -278,11 +279,16 @@ CSelectFilesPopup.prototype.initUploader = function ()
 					this.filesView.onFileUploadProgress(fileUid, file.size() * 0.2, file.size());
 				}
 			})
-			.on('onComplete', (sFileUid, bResponseReceived, oResult) => {
-				this.filesView.onFileUploadComplete(sFileUid, bResponseReceived, oResult);
+			.on('onComplete', (fileUid, isResponseReceived, result) => {
+				this.filesView.onFileUploadComplete(fileUid, isResponseReceived, result);
 				this.onFileUploadComplete();
 			})
-			.on('onCancel', this.filesView.onCancelUpload.bind(this.filesView))
+			.on('onCancel', (fileUid) => {
+				this.filesView.onCancelUpload(fileUid);
+				if (this.filesView.uploadingFiles().length === 0) {
+					this.hideLoading();
+				}
+			})
 		;
 	}
 };
