@@ -45,6 +45,15 @@ class Module extends \Aurora\System\Module\AbstractModule
 
     /**
      *
+     * @return Settings
+     */
+    protected function GetModuleSettings()
+    {
+        return $this->oModuleSettings;
+    }
+
+    /**
+     *
      * @return boolean
      */
     public function Save($UserId, $AccountID, $Attachments = [], $Storage = 'personal', $Path = '')
