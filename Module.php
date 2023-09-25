@@ -32,9 +32,7 @@ class Module extends \Aurora\System\Module\AbstractModule
         return $this->oApiFilecacheManager;
     }
 
-    public function init()
-    {
-    }
+    public function init() {}
 
     /**
      * @return Module
