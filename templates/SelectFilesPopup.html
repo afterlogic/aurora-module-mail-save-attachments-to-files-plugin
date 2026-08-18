@@ -1,4 +1,4 @@
-<div class="popup files popup_save_to_files" style="display: none;">
+<div class="popup files popup_save_to_files" data-test-id="mail-save-to-files-dialog" style="display: none;">
 	<div class="mask" data-bind="click: cancelPopup"></div>
 	<div class="popup_panel">
 		<span class="close" data-bind="click: cancelPopup"></span>
@@ -25,6 +25,7 @@
 				  data-bind="i18n: {'key': 'FILESWEBCLIENT/ACTION_NEW_FOLDER'}, command: createFolderCommand"
 			></span>
 			<span class="button"
+				  data-test-id="mail-save-to-files-ok"
 				  data-bind="i18n: {'key': '%MODULENAME%/ACTION_SAVE_HERE'}, command: selectFolderCommand"
 			></span>
 			<span class="button secondary_button"
